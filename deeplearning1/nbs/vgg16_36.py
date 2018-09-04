@@ -46,7 +46,58 @@ class Vgg16():
         self.create()
         self.get_classes()
 
+    def create(self):
+        """
+            Creates the VGG16 network achitecture and loads the pretrained weights.
+            Args:   None
+            Returns:   None
+        """
+        model = self.model = Sequential()
+        model.add(Lambda(vgg_preprocess, input_shape=(3,224,224), output_shape=(3,224,224)))
 
+        self.ConvBlock(2, 64)
+        self.ConvBlock(2, 128)
+        self.ConvBlock(3, 256)
+        self.ConvBlock(3, 512)
+        self.ConvBlock(3, 512)
+
+        model.add(Flatten())
+        self.FCBlock()
+        self.FCBlock()
+        model.add(Dense(1000, activation='softmax'))
+
+        fname = 'vgg16.h5'
+        model.load_weights(get_file(fname, self.FILE_PATH+fname, cache_subdir='models'))
+
+    def ConvBlock(self, layers, filters):
+        """
+            Adds a specified number of ZeroPadding and Covolution layers
+            to the model, and a MaxPooling layer at the very end.
+            Args:
+                layers (int):   The number of zero padded convolution layers
+                                to be added to the model.
+                filters (int):  The number of convolution filters to be 
+                                created for each layer.
+        """
+        model = self.model
+        for i in range(layers):
+            model.add(ZeroPadding2D((1, 1)))
+            model.add(Conv2D(filters, (3, 3), activation='relu'))
+        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+        
+
+    def FCBlock(self):
+        """
+            Adds a fully connected layer of 4096 neurons to the model with a
+            Dropout of 0.5
+            Args:   None
+            Returns:   None
+        """
+        model = self.model
+        model.add(Dense(4096, activation='relu'))
+        model.add(Dropout(0.5))
+        
+        
     def get_classes(self):
         """
             Downloads the Imagenet classes index file and loads it to self.classes.
@@ -81,57 +132,12 @@ class Vgg16():
         return np.array(preds), idxs, classes
 
 
-    def ConvBlock(self, layers, filters):
-        """
-            Adds a specified number of ZeroPadding and Covolution layers
-            to the model, and a MaxPooling layer at the very end.
-            Args:
-                layers (int):   The number of zero padded convolution layers
-                                to be added to the model.
-                filters (int):  The number of convolution filters to be 
-                                created for each layer.
-        """
-        model = self.model
-        for i in range(layers):
-            model.add(ZeroPadding2D((1, 1)))
-            model.add(Conv2D(filters, (3, 3), activation='relu'))
-        model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
 
-    def FCBlock(self):
-        """
-            Adds a fully connected layer of 4096 neurons to the model with a
-            Dropout of 0.5
-            Args:   None
-            Returns:   None
-        """
-        model = self.model
-        model.add(Dense(4096, activation='relu'))
-        model.add(Dropout(0.5))
 
 
-    def create(self):
-        """
-            Creates the VGG16 network achitecture and loads the pretrained weights.
-            Args:   None
-            Returns:   None
-        """
-        model = self.model = Sequential()
-        model.add(Lambda(vgg_preprocess, input_shape=(3,224,224), output_shape=(3,224,224)))
 
-        self.ConvBlock(2, 64)
-        self.ConvBlock(2, 128)
-        self.ConvBlock(3, 256)
-        self.ConvBlock(3, 512)
-        self.ConvBlock(3, 512)
 
-        model.add(Flatten())
-        self.FCBlock()
-        self.FCBlock()
-        model.add(Dense(1000, activation='softmax'))
-
-        fname = 'vgg16.h5'
-        model.load_weights(get_file(fname, self.FILE_PATH+fname, cache_subdir='models'))
 
 
     def get_batches(self, path, gen=image.ImageDataGenerator(), shuffle=True, batch_size=8, class_mode='categorical'):
@@ -167,7 +173,7 @@ class Vgg16():
                 batches : A keras.preprocessing.image.ImageDataGenerator object.
                           See definition for get_batches().
         """
-        self.ft(batches.num_class)
+        self.ft(batches.num_classes)
         classes = list(iter(batches.class_indices)) # get a list of all the class labels
         
         # batches.class_indices is a dict with the class name as key and an index as value
@@ -188,12 +194,16 @@ class Vgg16():
                 loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-    def fit_data(self, trn, labels,  val, val_labels,  nb_epoch=1, batch_size=64):
+    def fit_data(self, trn, labels,  val, val_labels, nb_epoch=1, batch_size=64):
         """
             Trains the model for a fixed number of epochs (iterations on a dataset).
             See Keras documentation: https://keras.io/models/model/
         """
-        self.model.fit(trn, labels, nb_epoch=nb_epoch,
+        
+        #self.model.fit(trn, labels, nb_epoch=nb_epoch,
+        #        validation_data=(val, val_labels), batch_size=batch_size)
+        #update to use keras 2 API
+        self.model.fit(trn, labels, epochs=nb_epoch,
                 validation_data=(val, val_labels), batch_size=batch_size)
 
 
@@ -202,6 +212,9 @@ class Vgg16():
             Fits the model on data yielded batch-by-batch by a Python generator.
             See Keras documentation: https://keras.io/models/model/
         """
+        #self.model.fit_generator(batches, samples_per_epoch=batches.samples, nb_epoch=nb_epoch,
+        #        validation_data=val_batches, nb_val_samples=val_batches.samples)
+        #update to use keras 2 API
         self.model.fit_generator(batches, samples_per_epoch=batches.samples, nb_epoch=nb_epoch,
                 validation_data=val_batches, nb_val_samples=val_batches.samples)
 

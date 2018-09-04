@@ -27,10 +27,10 @@ from sklearn.manifold import TSNE
 
 from IPython.lib.display import FileLink
 
-import theano
-from theano import shared, tensor as T
-from theano.tensor.nnet import conv2d, nnet
-from theano.tensor.signal import pool
+#import theano
+#from theano import shared, tensor as T
+#from theano.tensor.nnet import conv2d, nnet
+#from theano.tensor.signal import pool
 
 import keras
 from keras import backend as K
@@ -80,7 +80,7 @@ def floor(x):
 def ceil(x):
     return int(math.ceil(x))
 
-def plots(ims, figsize=(12,6), rows=1, interp=False, titles=None):
+def plots(ims, figsize=(6,4), rows=1, interp=False, titles=None):
     if type(ims[0]) is np.ndarray:
         ims = np.array(ims).astype(np.uint8)
         if (ims.shape[-1] != 3):
